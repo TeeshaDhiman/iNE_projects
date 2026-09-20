@@ -17,6 +17,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: false,
   },
   global: {
-    WebSocket: WebSocket as any
-  }
+    WebSocket: WebSocket,
+  } as any
 });
