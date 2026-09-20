@@ -10,8 +10,13 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
 }
 
+import WebSocket from 'ws';
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false,
   },
+  global: {
+    WebSocket: WebSocket as any
+  }
 });
