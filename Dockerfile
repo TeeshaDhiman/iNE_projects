@@ -17,8 +17,11 @@ RUN npx prisma generate
 # Copy rest of backend source
 COPY backend/ .
 
+# Fix permissions on node_modules binaries
+RUN chmod -R +x node_modules/.bin
+
 # Build TypeScript
-RUN npm run build
+RUN npx tsc
 
 # Expose port
 EXPOSE 10000
