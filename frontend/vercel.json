@@ -1,4 +1,6 @@
 {
+  "buildCommand": "npx tsc && npx vite build",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
