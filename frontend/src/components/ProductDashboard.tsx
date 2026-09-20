@@ -13,13 +13,7 @@ interface ProductDashboardProps {
 
 // Deterministic color for avatar based on product name
 function getAvatarColor(name: string): string {
-  const colors = [
-    'linear-gradient(135deg, #2e7eed22, #6366f122)',
-    'linear-gradient(135deg, #06b6d422, #2e7eed22)',
-    'linear-gradient(135deg, #8b5cf622, #6366f122)',
-    'linear-gradient(135deg, #10b98122, #06b6d422)',
-    'linear-gradient(135deg, #f59e0b22, #ef444422)',
-  ];
+  const colors = ['#f6f6f6', '#f0f0f0', '#ebebeb', '#f3f3f3', '#ededed'];
   const idx = name.charCodeAt(0) % colors.length;
   return colors[idx];
 }
@@ -73,7 +67,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ products, on
             <div className="product-card-header">
               <div
                 className="product-avatar"
-                style={{ background: getAvatarColor(p.name), fontSize: '0.875rem', fontWeight: 700 }}
+                style={{ background: getAvatarColor(p.name), color: '#767676', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Georgia, serif' }}
               >
                 {getInitials(p.name)}
               </div>

@@ -25,7 +25,7 @@ ChartJS.register(
   Filler
 );
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api';
 
 interface ProductDetailsProps {
   product: Product;
@@ -57,24 +57,37 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onBack 
   const [history, setHistory] = useState<PriceHistory[]>([]);
   const [logs, setLogs] = useState<ScrapeLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const [histRes, logsRes] = await Promise.all([
+        axios.get(`${API_BASE}/products/${product.id}/history`),
+        axios.get(`${API_BASE}/products/${product.id}/logs`)
+      ]);
+      setHistory(histRes.data);
+      setLogs(logsRes.data);
+      setLastUpdated(new Date());
+    } catch (e) {
+      console.error('Failed to fetch details', e);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [histRes, logsRes] = await Promise.all([
-          axios.get(`${API_BASE}/products/${product.id}/history`),
-          axios.get(`${API_BASE}/products/${product.id}/logs`)
-        ]);
-        setHistory(histRes.data);
-        setLogs(logsRes.data);
-      } catch (e) {
-        console.error('Failed to fetch details', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    // Initial load
+    fetchData(false);
+
+    // Auto-refresh every 60 seconds silently (no spinner flicker)
+    const intervalId = setInterval(() => {
+      fetchData(true);
+    }, 60_000);
+
+    return () => clearInterval(intervalId);
   }, [product.id]);
+
 
   const latestPrice = history.length > 0 ? history[history.length - 1].price : null;
   const latestStock = history.length > 0 ? history[history.length - 1].stock : null;
@@ -85,27 +98,27 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onBack 
     labels: history.map(h => formatDate(h.timestamp)),
     datasets: [
       {
-        label: 'Price ($)',
+        label: 'Price',
         data: history.map(h => h.price),
-        borderColor: '#2e7eed',
-        backgroundColor: 'rgba(46, 126, 237, 0.08)',
-        pointBackgroundColor: '#2e7eed',
+        borderColor: '#111',
+        backgroundColor: 'rgba(17, 17, 17, 0.06)',
+        pointBackgroundColor: '#111',
         pointRadius: 4,
         pointHoverRadius: 6,
         fill: true,
-        tension: 0.4,
+        tension: 0.3,
         yAxisID: 'y',
       },
       {
         label: 'Stock',
         data: history.map(h => h.stock),
-        borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.06)',
-        pointBackgroundColor: '#22c55e',
+        borderColor: '#767676',
+        backgroundColor: 'rgba(118, 118, 118, 0.06)',
+        pointBackgroundColor: '#767676',
         pointRadius: 4,
         pointHoverRadius: 6,
         fill: true,
-        tension: 0.4,
+        tension: 0.3,
         yAxisID: 'y1',
       },
     ],
@@ -117,45 +130,45 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onBack 
     plugins: {
       legend: {
         labels: {
-          color: '#8b96b0',
-          font: { size: 12, family: 'Inter' },
+          color: '#767676',
+          font: { size: 12, family: 'Inter, sans-serif' },
           boxWidth: 12,
           boxHeight: 12,
           usePointStyle: true,
         }
       },
       tooltip: {
-        backgroundColor: '#131a25',
-        borderColor: 'rgba(255,255,255,0.09)',
+        backgroundColor: '#fff',
+        borderColor: '#e4e4e4',
         borderWidth: 1,
-        titleColor: '#f0f4ff',
-        bodyColor: '#8b96b0',
+        titleColor: '#111',
+        bodyColor: '#767676',
         padding: 12,
-        titleFont: { family: 'Inter', weight: '600' as const },
-        bodyFont: { family: 'Inter' },
+        titleFont: { family: 'Georgia, serif', weight: 'bold' as const },
+        bodyFont: { family: 'Inter, sans-serif' },
       }
     },
     scales: {
       x: {
-        ticks: { color: '#4e5970', font: { size: 11, family: 'Inter' } },
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        border: { color: 'rgba(255,255,255,0.06)' },
+        ticks: { color: '#767676', font: { size: 11, family: 'Inter, sans-serif' } },
+        grid: { color: '#f0f0f0' },
+        border: { color: '#e4e4e4' },
       },
       y: {
         type: 'linear' as const,
         display: true,
         position: 'left' as const,
-        ticks: { color: '#2e7eed', font: { size: 11 }, callback: (v: any) => `$${v}` },
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        border: { color: 'rgba(255,255,255,0.06)' },
+        ticks: { color: '#111', font: { size: 11, family: 'Georgia, serif' }, callback: (v: any) => `₹${v}` },
+        grid: { color: '#f0f0f0' },
+        border: { color: '#e4e4e4' },
       },
       y1: {
         type: 'linear' as const,
         display: true,
         position: 'right' as const,
-        ticks: { color: '#22c55e', font: { size: 11 } },
+        ticks: { color: '#767676', font: { size: 11 } },
         grid: { drawOnChartArea: false },
-        border: { color: 'rgba(255,255,255,0.06)' },
+        border: { color: '#e4e4e4' },
       },
     },
   };
@@ -191,37 +204,34 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onBack 
           </div>
           {latestPrice !== null && (
             <div className="stat-pill stat-pill-success">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-              </svg>
-              ${latestPrice.toFixed(2)}
+              ₹{latestPrice.toFixed(0)}
             </div>
           )}
         </div>
 
         {/* Stats Row */}
         {history.length > 0 && (
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '1.5rem', borderBottom: '1px solid var(--line)', paddingBottom: '1.5rem' }}>
             <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Current Price</div>
-              <div style={{ fontSize: '1.375rem', fontWeight: 700, color: '#2e7eed' }}>${latestPrice?.toFixed(2)}</div>
+              <div style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: '0.25rem' }}>Current Price</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)' }}>₹{latestPrice?.toFixed(0)}</div>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-subtle)' }} />
+            <div style={{ width: '1px', background: 'var(--line)' }} />
             <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>In Stock</div>
-              <div style={{ fontSize: '1.375rem', fontWeight: 700, color: latestStock! > 0 ? '#22c55e' : '#f43f5e' }}>{latestStock}</div>
+              <div style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: '0.25rem' }}>In Stock</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)' }}>{latestStock}</div>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-subtle)' }} />
+            <div style={{ width: '1px', background: 'var(--line)' }} />
             <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Data Points</div>
-              <div style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)' }}>{history.length}</div>
+              <div style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: '0.25rem' }}>Data Points</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)' }}>{history.length}</div>
             </div>
             {successRate !== null && (
               <>
-                <div style={{ width: '1px', background: 'var(--border-subtle)' }} />
+                <div style={{ width: '1px', background: 'var(--line)' }} />
                 <div>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Success Rate</div>
-                  <div style={{ fontSize: '1.375rem', fontWeight: 700, color: successRate >= 80 ? '#22c55e' : '#f59e0b' }}>{successRate}%</div>
+                  <div style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: '0.25rem' }}>Success Rate</div>
+                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)' }}>{successRate}%</div>
                 </div>
               </>
             )}
@@ -250,14 +260,48 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product, onBack 
       {/* Logs Table */}
       <div className="logs-card animate-in animate-in-delay-1">
         <div className="logs-card-header">
-          <span className="logs-card-title">Scrape Activity Log</span>
-          {logs.length > 0 && (
-            <span className="badge badge-success">
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
-              {logs.length} entries
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span className="logs-card-title">Scrape Activity Log</span>
+            {logs.length > 0 && (
+              <span className="badge badge-success">
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
+                {logs.length} entries
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {lastUpdated && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Updated {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              id="refresh-logs-btn"
+              onClick={() => fetchData(true)}
+              style={{
+                background: 'rgba(0, 242, 254, 0.08)',
+                border: '1px solid rgba(0, 242, 254, 0.2)',
+                borderRadius: '8px',
+                color: 'var(--accent-cyan)',
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
+
 
         {logs.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>

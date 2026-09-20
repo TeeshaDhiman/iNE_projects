@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+node/
+node.zip
+
+# Build output
+dist/
+build/
+
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Debug / test artifacts
+*.png
+*.html
+body_dump.html
+html_source.html
+price_block_dump.html
+debug.png
+debug_after_click.png
+mock_store.js
+fetch_js.js
+scrape_network.js
+scrape_test.js
+scrape_test2.js
+scrape_test_prod.js
+scrape_test_url.js
+scrape_headed.ts
+test_*.js
+test_click.ts
+bundle.js
+after_click.png
+final_state.png
+mock_store.txt
+mock_store.html
+
+# Playwright browsers (installed at build time on Render)
+backend/playwright-report/
+backend/test-results/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

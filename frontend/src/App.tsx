@@ -4,7 +4,7 @@ import { SearchStore } from './components/SearchStore';
 import { ProductDashboard, Product } from './components/ProductDashboard';
 import { ProductDetails } from './components/ProductDetails';
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api';
 
 function App() {
   const [trackedProducts, setTrackedProducts] = useState<Product[]>([]);
@@ -29,8 +29,8 @@ function App() {
       <nav className="navbar">
         <div className="navbar-inner">
           <div className="navbar-brand" onClick={() => setSelectedProduct(null)}>
-            <div className="brand-logo">P</div>
-            <span className="brand-name">Price<span>Watch</span></span>
+            <div className="brand-logo">INE</div>
+            <span className="brand-name">Store <span>PriceWatch</span></span>
           </div>
           <div className="navbar-meta">
             <span className="nav-badge">Live Monitoring</span>
@@ -46,7 +46,7 @@ function App() {
           <>
             {/* Page Header */}
             <div className="page-header animate-in">
-              <h1 className="page-title">Product Intelligence</h1>
+              <h1 className="page-title">INE Store Price Intelligence</h1>
               <p className="page-subtitle">
                 Search, track, and monitor real-time pricing across the INE store catalog.
               </p>
@@ -60,7 +60,7 @@ function App() {
 
       {/* Footer */}
       <footer className="app-footer">
-        PriceWatch &copy; {new Date().getFullYear()} &mdash; Enterprise Product Intelligence Platform
+        INE Store PriceWatch &copy; {new Date().getFullYear()} &mdash; Enterprise Product Intelligence Platform
       </footer>
     </div>
   );
